@@ -12,6 +12,8 @@ LINE_WIDTH = 2
 TEXT_SIZE = 40
 TEXT_X_POS = 40
 TEXT_Y_POS = 80
+TEXT_X_OFFSET = 10
+TEXT_Y_OFFSET = 50
 
 
 def draw_grid
@@ -34,8 +36,9 @@ def draw_initial_blocks(current_line)
   end
 end
 
-def show_game_over
+def show_game_over(score)
   Text.new("Game over!", size: TEXT_SIZE, x: TEXT_X_POS, y: TEXT_Y_POS, z: 2)
+  Text.new("Score: #{score}", size: TEXT_SIZE, x: TEXT_X_POS + TEXT_X_OFFSET, y: TEXT_Y_POS + TEXT_Y_OFFSET, z: 2)
 end
 
 def update_blocks(current_direction:, active_squares:)
@@ -91,6 +94,7 @@ def main
   current_line = BLOCK_HEIGHT - 1
   current_direction = :right
   speed = INITIAL_SPEED
+  score = 0
 
   draw_grid
   frozen_squares = {}
@@ -98,7 +102,7 @@ def main
 
   update do
     if active_squares.empty?
-      show_game_over
+      show_game_over(score)
     elsif Window.frames % (FRAMES / speed) == 0
       current_direction, active_squares = update_blocks(
         current_direction: current_direction,
@@ -116,6 +120,7 @@ def main
       active_squares: active_squares,
       frozen_squares: frozen_squares
     )
+    score = frozen_squares.size
   end
 
   show
