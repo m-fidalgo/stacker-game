@@ -20,14 +20,13 @@ def draw_grid
   end
 end
 
+def draw_square(x:, y:)
+  Square.new(x: x, y: y, color: BLOCK_COLOR, size: GRID_SIZE)
+end
+
 def draw_initial_blocks(current_line)
   (0..BLOCK_AMOUNT).map do |index|
-    Square.new(
-      x: GRID_SIZE * index,
-      y: GRID_SIZE * current_line,
-      size: GRID_SIZE,
-      color: BLOCK_COLOR,
-    )
+    draw_square(x: GRID_SIZE * index, y: GRID_SIZE * current_line)
   end
 end
 
@@ -48,38 +47,33 @@ def update_blocks(current_direction:, active_squares:)
   return current_direction, active_squares
 end
 
-def draw_frozen_squares(active_squares:, frozen_squares:)
-  active_squares.each do |active_square|
-    frozen_squares["#{active_square.x},#{active_square.y}"] = Square.new(
-      x: active_square.x,
-      y: active_square.y,
-      color: BLOCK_COLOR,
-      size: GRID_SIZE
-    )
-  end
-
-  frozen_squares
+def has_block(frozen_squares:, x:, y:)
+  frozen_squares.has_key?("#{x},#{y}")
 end
 
 def draw_new_blocks(current_line:, active_squares:, frozen_squares:)
+  active_squares.each do |active_square|
+    x, y = active_square.x,  active_square.y
+    first_line = BLOCK_HEIGHT - 2
+    has_block_below = has_block(frozen_squares: frozen_squares, x: x, y: y + GRID_SIZE)
+
+    if current_line == first_line || has_block_below
+      frozen_squares["#{x},#{y}"] = draw_square(x: x, y: y)
+    end
+  end
+
   active_squares.each(&:remove)
   active_squares = []
 
   (0..BLOCK_WIDTH).each do |index|
-    x = GRID_SIZE * index
-    y = GRID_SIZE * current_line
+    x, y = GRID_SIZE * index, GRID_SIZE * current_line
 
-    if frozen_squares.has_key?("#{x},#{y + GRID_SIZE}")
-      active_squares.push(Square.new(
-        x: x,
-        y: y,
-        color: BLOCK_COLOR,
-        size: GRID_SIZE
-      ))
+    if has_block(frozen_squares: frozen_squares, x: x, y: y + GRID_SIZE)
+      active_squares.push(draw_square(x: x, y: y))
     end
   end
 
-  active_squares
+  return active_squares, frozen_squares
 end
 
 def main
@@ -107,11 +101,7 @@ def main
     current_line -= 1
     speed += 1
 
-    frozen_squares = draw_frozen_squares(
-      active_squares: active_squares,
-      frozen_squares: frozen_squares
-    )
-    active_squares = draw_new_blocks(
+    active_squares, frozen_squares = draw_new_blocks(
       current_line: current_line, 
       active_squares: active_squares,
       frozen_squares: frozen_squares
