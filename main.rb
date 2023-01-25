@@ -9,6 +9,10 @@ GRID_COLOR = Color.new('#222222')
 GRID_SIZE = 40
 INITIAL_SPEED = 4
 LINE_WIDTH = 2
+TEXT_SIZE = 40
+TEXT_X_POS = 40
+TEXT_Y_POS = 80
+
 
 def draw_grid
   (0..Window.width).step(GRID_SIZE).each do |x|
@@ -28,6 +32,10 @@ def draw_initial_blocks(current_line)
   (0..BLOCK_AMOUNT).map do |index|
     draw_square(x: GRID_SIZE * index, y: GRID_SIZE * current_line)
   end
+end
+
+def show_game_over
+  Text.new("Game over!", size: TEXT_SIZE, x: TEXT_X_POS, y: TEXT_Y_POS, z: 2)
 end
 
 def update_blocks(current_direction:, active_squares:)
@@ -89,7 +97,9 @@ def main
   active_squares = draw_initial_blocks(current_line)
 
   update do
-    if Window.frames % (FRAMES / speed) == 0
+    if active_squares.empty?
+      show_game_over
+    elsif Window.frames % (FRAMES / speed) == 0
       current_direction, active_squares = update_blocks(
         current_direction: current_direction,
         active_squares: active_squares
@@ -107,7 +117,8 @@ def main
       frozen_squares: frozen_squares
     )
   end
+
+  show
 end
 
 main
-show
