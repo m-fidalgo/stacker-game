@@ -20,7 +20,7 @@ def draw_grid
   end
 end
 
-def draw_blocks(current_line)
+def draw_initial_blocks(current_line)
   (0..BLOCK_AMOUNT).map do |index|
     Square.new(
       x: GRID_SIZE * index,
@@ -31,23 +31,55 @@ def draw_blocks(current_line)
   end
 end
 
-def update_blocks(current_direction:, speed:, active_squares:)
-  update do
-    if Window.frames % (FRAMES / speed) == 0
-      case current_direction
-      when :right
-        active_squares.each { |square| square.x += GRID_SIZE }
-        if active_squares.last.x + active_squares.last.width >= Window.width
-          current_direction = :left
-        end
-      when :left
-        active_squares.each { |square| square.x -= GRID_SIZE }
-        if active_squares.first.x <= 0
-          current_direction = :right
-        end
-      end
+def update_blocks(current_direction:, active_squares:)
+  case current_direction
+  when :right
+    active_squares.each { |square| square.x += GRID_SIZE }
+    if active_squares.last.x + active_squares.last.width >= Window.width
+      current_direction = :left
+    end
+  when :left
+    active_squares.each { |square| square.x -= GRID_SIZE }
+    if active_squares.first.x <= 0
+      current_direction = :right
     end
   end
+
+  return current_direction, active_squares
+end
+
+def draw_frozen_squares(active_squares:, frozen_squares:)
+  active_squares.each do |active_square|
+    frozen_squares["#{active_square.x},#{active_square.y}"] = Square.new(
+      x: active_square.x,
+      y: active_square.y,
+      color: BLOCK_COLOR,
+      size: GRID_SIZE
+    )
+  end
+
+  frozen_squares
+end
+
+def draw_new_blocks(current_line:, active_squares:, frozen_squares:)
+  active_squares.each(&:remove)
+  active_squares = []
+
+  (0..BLOCK_WIDTH).each do |index|
+    x = GRID_SIZE * index
+    y = GRID_SIZE * current_line
+
+    if frozen_squares.has_key?("#{x},#{y + GRID_SIZE}")
+      active_squares.push(Square.new(
+        x: x,
+        y: y,
+        color: BLOCK_COLOR,
+        size: GRID_SIZE
+      ))
+    end
+  end
+
+  active_squares
 end
 
 def main
@@ -59,14 +91,33 @@ def main
   speed = INITIAL_SPEED
 
   draw_grid
-  active_squares = draw_blocks(current_line)
-  update_blocks(
-    current_direction: current_direction,
-    speed: speed,
-    active_squares: active_squares
-  )
+  frozen_squares = {}
+  active_squares = draw_initial_blocks(current_line)
 
-  show
+  update do
+    if Window.frames % (FRAMES / speed) == 0
+      current_direction, active_squares = update_blocks(
+        current_direction: current_direction,
+        active_squares: active_squares
+      )
+    end
+  end
+
+  on :key_down do
+    current_line -= 1
+    speed += 1
+
+    frozen_squares = draw_frozen_squares(
+      active_squares: active_squares,
+      frozen_squares: frozen_squares
+    )
+    active_squares = draw_new_blocks(
+      current_line: current_line, 
+      active_squares: active_squares,
+      frozen_squares: frozen_squares
+    )
+  end
 end
 
 main
+show
